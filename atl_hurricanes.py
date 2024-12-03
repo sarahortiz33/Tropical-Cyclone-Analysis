@@ -1,3 +1,14 @@
+"""
+    Author: Sarah Ortiz
+    Date: 12-02-2024
+    Description: This program uses data from NOAA about tropical cyclones, and
+    creates four figures that show a relationship between maximum wind speed
+    and minimum pressure, shows a map of cyclone paths from a given year or
+    years, and show the amount of tropical cyclones per year from 1851 to 2015.
+    Several helper functions that were used to clean the data are also used in
+    this program.
+"""
+
 import pandas as pd
 import statsmodels.api as sm
 import matplotlib.pyplot as plt
@@ -75,6 +86,7 @@ def wind_pressure(df):
     ax.scatter(df["Minimum Pressure"], df["Maximum Wind"], color='darkorange')
     ax.plot(df["Minimum Pressure"], y_pred, color='teal')
 
+    # Formats the figure.
     ax.set_facecolor("floralwhite")
     ax.set_xlabel("Minimum Pressure (mb)", fontsize=16, fontname="Lucida Sans Unicode")
     ax.set_ylabel("Maximum Wind Speed (mph)", fontsize=16, fontname="Lucida Sans Unicode")
@@ -138,22 +150,36 @@ def five_years(df, start, end):
 
 
 def cyclone_path(df, start=None, end=None):
+    """
+    This function creates a plot that depicts cyclone paths from a given year
+    range on a map if the start and end parameters are filled, and of the
+    dataset otherwise.
+
+    param df: A DataFrame whose data will be used to create the plot.
+    param start: An int that is the year that the new DataFrame will start at.
+    This parameter also has a default value of None.
+    param end: An int that is the year that the new DataFrame will end at. This
+    parameter also has a default value of None.
+
+    return: Nothing is returned by this function.
+    """
+    # Cleans the latitude and longitude columns to get correct values.
     new_long = lats_longs_anom(df, "Longitude")
     new_lat = lats_longs_anom(df, "Latitude")
 
     df["Longitude"] = new_long
     df["Latitude"] = new_lat
 
+    # Gets necessary geo data from the geopandas library to plot the map.
     g_df = gpd.GeoDataFrame(df, geometry=gpd.points_from_xy(df.Longitude, df.Latitude))
     url = "https://naciscdn.org/naturalearth/110m/cultural/ne_110m_admin_0_countries.zip"
     world_data = gpd.read_file(url)
-
     continents = ["North America", "South America", "Africa", "Europe"]
     new_wrld_data = world_data[world_data["CONTINENT"].isin(continents)]
 
+    # Plots and formats the figure.
     fig, axis = plt.subplots()
     new_wrld_data.plot(ax=axis, color="lightblue", edgecolor="whitesmoke")
-
     g_df.plot(ax=axis, color="darkorange", alpha=0.2)
     fig.patch.set_facecolor("whitesmoke")
     axis.set_facecolor("floralwhite")
@@ -161,6 +187,8 @@ def cyclone_path(df, start=None, end=None):
     axis.set_ylabel("Latitude", fontsize=16, fontname="Lucida Sans Unicode")
     axis.set_xlim(-150, 50)
 
+    # Checks to see if there is a timeframe that the plot graphed so that this
+    # can be detailed in the title of the plot.
     if start and end:
         if start == end:
             title_str = "Cyclone Path (" + str(start) + ")"
@@ -174,12 +202,18 @@ def cyclone_path(df, start=None, end=None):
 
 def cyclones_over_time(df):
     """
-    cyclones yearly
-    :param df:
-    :return:
+    This function counts the amount of tropical cyclones that happened each
+    year, and plots this data.
+
+    param df: A DataFrame that will be used to count the data points for each
+    year.
+
+    return: Nothing is returned by this function.
     """
     date_at = {}
 
+    # Loops through the DataFrame to count the amount of cyclones per year and
+    # add it to a dictionary.
     for index, row in df.iterrows():
         if row["Date"].year not in date_at:
             date_at[row["Date"].year] = 1
@@ -189,7 +223,7 @@ def cyclones_over_time(df):
     x_years = list(range(1851, 2016, 4))
     y_ticks = list(range(0, 950, 50))
 
-    # Create a figure and set of subplots
+    # Plots and formats the figure.
     fig, ax = plt.subplots()
     ax.set_facecolor("floralwhite")
     plt.plot(list(date_at.keys()), list(date_at.values()), color="darkorange")
